@@ -1,0 +1,25 @@
+{
+  "name": "photo-sharing-app",
+  "version": "1.0.0",
+  "main": "handler.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@middy/core": "^5.5.1",
+    "aws-sdk": "^2.1692.0",
+    "formidable": "^3.5.2",
+    "middy": "^0.36.0",
+    "serverless-iam-roles-per-function": "^3.2.0",
+    "uuid": "^11.0.3"
+  },
+  "devDependencies": {
+    "serverless-webpack": "^5.15.0",
+    "webpack": "^5.96.1",
+    "webpack-node-externals": "^3.0.0"
+  }
+}

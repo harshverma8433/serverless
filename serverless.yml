@@ -1,0 +1,80 @@
+service: photo-sharing-app
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: dev
+  region: us-east-1
+  environment:
+    BUCKET_NAME: photoapps-${self:provider.stage}-${self:custom.instanceId}
+    DYNAMODB_TABLE: photoApplications-${self:provider.stage}-${self:custom.instanceId}
+    AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+
+custom:
+  instanceId: ${opt:instanceId, 'default-instance'}
+  build:
+    esbuild: true  # Use Serverless's native ESBuild support
+
+plugins:
+  - serverless-iam-roles-per-function  # Keep the IAM roles plugin
+
+functions:
+  hello:
+    handler: handler.hello
+
+  uploadPhoto: # Corrected indentation here
+    handler: handler.uploadPhoto
+    timeout: 30
+    memorySize: 512
+    environment:
+      DYNAMODB_TABLE_NAME: ${self:provider.environment.DYNAMODB_TABLE}
+      BUCKET_NAME: ${self:provider.environment.BUCKET_NAME}
+    iamRoleStatements:
+      - Effect: "Allow"
+        Action:
+          - "s3:PutObject"
+          - "s3:GetObject"
+          - "s3:ListBucket"
+        Resource:
+          - "arn:aws:s3:::${self:provider.environment.BUCKET_NAME}"
+          - "arn:aws:s3:::${self:provider.environment.BUCKET_NAME}/*"
+    events:
+      - http:
+          path: upload
+          method: post
+          cors: true
+          integration: lambda-proxy
+
+  getPhotos:
+    handler: handler.getPhotos
+    environment:
+      DYNAMODB_TABLE_NAME: ${self:provider.environment.DYNAMODB_TABLE}
+    iamRoleStatements:
+      - Effect: "Allow"
+        Action:
+          - "dynamodb:Scan"
+        Resource:
+          - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
+    events:
+      - http:
+          path: photos
+          method: get
+
+resources:
+  Resources:
+    PhotosBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:provider.environment.BUCKET_NAME}
+
+    PhotosTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.DYNAMODB_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: photoId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: photoId
+            KeyType: HASH
